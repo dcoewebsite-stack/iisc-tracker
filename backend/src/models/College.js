@@ -41,10 +41,20 @@ const collegeSchema = new mongoose.Schema(
       trim: true,
       default: '',
     },
+    collegeNameNormalized: {
+      type: String,
+      required: true,
+      unique: true, 
+    },
   },
   {
     timestamps: true, // adds createdAt and updatedAt automatically
   }
 );
+collegeSchema.pre('validate', function () {
+  if (this.collegeName) {
+    this.collegeNameNormalized = this.collegeName.trim().toLowerCase();
+  }
+});
 
 module.exports = mongoose.model('College', collegeSchema);

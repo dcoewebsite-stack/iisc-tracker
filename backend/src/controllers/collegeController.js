@@ -26,6 +26,16 @@ const getCollegeById = async (req, res) => {
 // POST /api/colleges
 const createCollege = async (req, res) => {
   try {
+    const normalizedName = req.body.collegeName?.trim().toLowerCase();
+
+    const existing = await College.findOne({ collegeNameNormalized: normalizedName });
+    if (existing) {
+      return res.status(409).json({
+        success: false,
+        error: `A college named "${existing.collegeName}" already exists`,
+      });
+    }
+
     const college = await College.create(req.body);
     res.status(201).json({ success: true, data: college });
   } catch (error) {
@@ -36,9 +46,26 @@ const createCollege = async (req, res) => {
 // PUT /api/colleges/:id
 const updateCollege = async (req, res) => {
   try {
+    if (req.body.collegeName) {
+      const normalizedName = req.body.collegeName.trim().toLowerCase();
+
+      const existing = await College.findOne({
+        collegeNameNormalized: normalizedName,
+        _id: { $ne: req.params.id }, // exclude the current document itself
+      });
+      if (existing) {
+        return res.status(409).json({
+          success: false,
+          error: `A college named "${existing.collegeName}" already exists`,
+        });
+      }
+
+      req.body.collegeNameNormalized = normalizedName;
+    }
+
     const college = await College.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,           // return the updated document, not the old one
-      runValidators: true, // re-run schema validation (enum, required) on update
+      new: true,
+      runValidators: true,
     });
     if (!college) {
       return res.status(404).json({ success: false, error: 'College not found' });
