@@ -6,6 +6,13 @@ interface LoginPageProps {
   onLoginSuccess: (token: string) => void;
 }
 
+const EMPLOYEE_NAMES = [
+  'Pravar',
+  'Riya',
+  'Amit',
+  'Neha',
+];
+
 const LoginPage = ({ onLoginSuccess }: LoginPageProps) => {
   const navigate = useNavigate();
   const [employeeName, setEmployeeName] = useState('');
@@ -14,8 +21,8 @@ const LoginPage = ({ onLoginSuccess }: LoginPageProps) => {
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-    if (!employeeName.trim() || !password.trim()) {
-      setError('Please enter your name and password');
+    if (!employeeName || !password.trim()) {
+      setError('Please select your name and enter password');
       return;
     }
 
@@ -24,7 +31,7 @@ const LoginPage = ({ onLoginSuccess }: LoginPageProps) => {
 
     try {
       const response = await api.post('/auth/login', {
-        employeeName: employeeName.trim(),
+        employeeName,
         password,
       });
 
@@ -61,14 +68,18 @@ const LoginPage = ({ onLoginSuccess }: LoginPageProps) => {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Your Name
             </label>
-            <input
-              type="text"
+            <select
               value={employeeName}
               onChange={(e) => setEmployeeName(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="e.g. Pravar"
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 text-base"
-            />
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 text-base bg-white"
+            >
+              <option value="">Select your name</option>
+              {EMPLOYEE_NAMES.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>
