@@ -17,26 +17,11 @@ const App = () => {
   return (
     <BrowserRouter>
       <Routes>
-        <Route
-          path="/login"
-          element={<LoginPage onLoginSuccess={handleLoginSuccess} />}
-        />
-        <Route
-          path="/dashboard"
-          element={token ? <DashboardPage /> : <Navigate to="/login" />}
-        />
-        <Route
-          path="/colleges"
-          element={token ? <CollegesPage /> : <Navigate to="/login" />}
-        />
-        <Route
-  path="/log"
-  element={token ? <LogPage /> : <Navigate to="/login" />}
-/>
-        <Route
-          path="*"
-          element={<Navigate to={token ? '/dashboard' : '/login'} />}
-        />
+        <Route path="/login" element={<LoginPage onLoginSuccess={handleLoginSuccess} />} />
+        <Route path="/dashboard" element={token ? <DashboardPage /> : <Navigate to="/login" />} />
+        <Route path="/colleges" element={token ? <CollegesPage /> : <Navigate to="/login" />} />
+        <Route path="/log" element={token ? <LogPage /> : <Navigate to="/login" />} />
+        <Route path="*" element={<Navigate to={token ? '/dashboard' : '/login'} />} />
       </Routes>
     </BrowserRouter>
   );

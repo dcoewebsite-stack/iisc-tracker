@@ -1,5 +1,25 @@
 const mongoose = require('mongoose');
 
+const followUpSchema = new mongoose.Schema({
+  followUpDate: {
+    type: Date,
+    default: null,
+  },
+  followUpNotes: {
+    type: String,
+    trim: true,
+    default: '',
+  },
+  isDone: {
+    type: Boolean,
+    default: false,
+  },
+  doneAt: {
+    type: Date,
+    default: null,
+  },
+}, { _id: true });
+
 const collegeSchema = new mongoose.Schema(
   {
     collegeName: {
@@ -7,15 +27,25 @@ const collegeSchema = new mongoose.Schema(
       required: [true, 'College name is required'],
       trim: true,
     },
+    collegeNameNormalized: {
+      type: String,
+      required: true,
+      unique: true,
+    },
     assignedEmployee: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    contactPerson: {
       type: String,
       trim: true,
       default: '',
     },
     status: {
       type: String,
-      enum: ['Upcoming', 'Visited'],
-      required: [true, 'Status is required'],
+      enum: ['Upcoming', 'Follow-up Pending', 'Completed'],
+      required: true,
       default: 'Upcoming',
     },
     visitDate: {
@@ -27,35 +57,19 @@ const collegeSchema = new mongoose.Schema(
       trim: true,
       default: '',
     },
-    followUpDate: {
-      type: Date,
-      default: null,
-    },
-    followUpNotes: {
-      type: String,
-      trim: true,
-      default: '',
+    followUps: {
+      type: [followUpSchema],
+      default: [],
     },
     lastUpdatedBy: {
       type: String,
       trim: true,
       default: '',
     },
-    collegeNameNormalized: {
-      type: String,
-      required: true,
-      unique: true, 
-    },
-    contactPerson: {
-      type: String,
-      trim: true,
-      default: '',
-    }
   },
-  {
-    timestamps: true, // adds createdAt and updatedAt automatically
-  }
+  { timestamps: true }
 );
+
 collegeSchema.pre('validate', function () {
   if (this.collegeName) {
     this.collegeNameNormalized = this.collegeName.trim().toLowerCase();

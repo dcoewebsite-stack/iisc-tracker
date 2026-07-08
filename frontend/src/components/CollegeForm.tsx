@@ -8,27 +8,26 @@ const EMPLOYEE_NAMES = [
   'Nevin',
   'Varsha',
   'Arnav',
-  'Pravar'
+  'Pravar',
 ];
 
 interface CollegeFormProps {
   college?: College | null;
   onSave: (data: CollegeFormData) => Promise<void>;
   onClose: (deleted?: boolean) => void;
+  onMarkFollowUpDone: (collegeId: string, followUpId: string) => Promise<void>;
 }
 
 const EMPTY_FORM: CollegeFormData = {
   collegeName: '',
   assignedEmployee: '',
-  status: 'Upcoming',
+  contactPerson: '',
   visitDate: '',
   notes: '',
-  followUpDate: '',
-  followUpNotes: '',
-  contactPerson: '',
+  followUps: [],
 };
 
-const CollegeForm = ({ college, onSave, onClose }: CollegeFormProps) => {
+const CollegeForm = ({ college, onSave, onClose, onMarkFollowUpDone }: CollegeFormProps) => {
   const [form, setForm] = useState<CollegeFormData>(EMPTY_FORM);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -37,22 +36,28 @@ const CollegeForm = ({ college, onSave, onClose }: CollegeFormProps) => {
   const [postponeReason, setPostponeReason] = useState('');
   const [showPostponeModal, setShowPostponeModal] = useState(false);
   const [pendingPostponeField, setPendingPostponeField] = useState('');
+  const [postponeAction, setPostponeAction] = useState<'submit' | 'complete'>('submit');
+  const [markingDone, setMarkingDone] = useState<string | null>(null);
 
   useEffect(() => {
     if (college) {
       setForm({
         collegeName: college.collegeName,
         assignedEmployee: college.assignedEmployee || '',
-        status: college.status,
+        contactPerson: college.contactPerson || '',
         visitDate: college.visitDate
           ? new Date(college.visitDate).toISOString().split('T')[0]
           : '',
         notes: college.notes || '',
-        followUpDate: college.followUpDate
-          ? new Date(college.followUpDate).toISOString().split('T')[0]
-          : '',
-        followUpNotes: college.followUpNotes || '',
-        contactPerson: college.contactPerson || '',
+        followUps: college.followUps.map((fu) => ({
+          _id: fu._id,
+          followUpDate: fu.followUpDate
+            ? new Date(fu.followUpDate).toISOString().split('T')[0]
+            : '',
+          followUpNotes: fu.followUpNotes || '',
+          isDone: fu.isDone,
+          doneAt: fu.doneAt || null,
+        })),
       });
     } else {
       setForm(EMPTY_FORM);
@@ -65,34 +70,68 @@ const CollegeForm = ({ college, onSave, onClose }: CollegeFormProps) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleSubmit = async (reason?: string) => {
+  const handleFollowUpChange = (
+    index: number,
+    field: 'followUpDate' | 'followUpNotes',
+    value: string
+  ) => {
+    setForm((prev) => {
+      const updated = [...(prev.followUps || [])];
+      updated[index] = { ...updated[index], [field]: value };
+      return { ...prev, followUps: updated };
+    });
+  };
+
+  const addFollowUp = () => {
+    setForm((prev) => ({
+      ...prev,
+      followUps: [
+        ...(prev.followUps || []),
+        { followUpDate: '', followUpNotes: '', isDone: false },
+      ],
+    }));
+  };
+
+  const removeFollowUp = (index: number) => {
+    setForm((prev) => {
+      const updated = [...(prev.followUps || [])];
+      updated.splice(index, 1);
+      return { ...prev, followUps: updated };
+    });
+  };
+
+  const handleMarkDone = async (followUpId: string) => {
+    if (!college) return;
+    setMarkingDone(followUpId);
+    try {
+      await onMarkFollowUpDone(college._id, followUpId);
+    } finally {
+      setMarkingDone(null);
+    }
+  };
+
+  const handleSubmit = async (overrideReason?: string) => {
     if (!form.collegeName.trim()) {
       setError('College name is required');
       return;
     }
-  
-    if (form.status === 'Visited' && form.visitDate) {
-      const visitDate = new Date(form.visitDate);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      if (visitDate > today) {
-        setError('Visit date cannot be in the future for a Visited college');
-        return;
-      }
-    }
-  
+
     setLoading(true);
     setError('');
-  
+
     try {
-      // If a reason is provided, attach it to the payload
-      const payload = reason ? { ...form, reason } : form;
-      await onSave(payload as CollegeFormData);
+      const payload: CollegeFormData = overrideReason
+        ? { ...form, reason: overrideReason }
+        : { ...form };
+
+      await onSave(payload);
       onClose();
     } catch (err: any) {
       if (err.response?.data?.requiresReason) {
+        setPostponeAction('submit');
         setShowPostponeModal(true);
         setPendingPostponeField(err.response.data.field);
+        setError('');
       } else {
         setError(err.response?.data?.error || 'Something went wrong. Try again.');
       }
@@ -101,9 +140,33 @@ const CollegeForm = ({ college, onSave, onClose }: CollegeFormProps) => {
     }
   };
 
+  const handleMarkCompleted = async (overrideReason?: string) => {
+    setLoading(true);
+    setError('');
+    try {
+      const payload: CollegeFormData = {
+        ...form,
+        status: 'Completed',
+        ...(overrideReason ? { reason: overrideReason } : {}),
+      };
+      await onSave(payload);
+      onClose();
+    } catch (err: any) {
+      if (err.response?.data?.requiresReason) {
+        setPostponeAction('complete');
+        setShowPostponeModal(true);
+        setPendingPostponeField(err.response.data.field);
+        setError('');
+      } else {
+        setError(err.response?.data?.error || 'Failed to mark as completed.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleDelete = async () => {
-    if (!college) return;
-    if (!deleteReason.trim()) return;
+    if (!college || !deleteReason.trim()) return;
     setLoading(true);
     try {
       await api.delete(`/colleges/${college._id}`, {
@@ -127,7 +190,7 @@ const CollegeForm = ({ college, onSave, onClose }: CollegeFormProps) => {
       }}
     >
       <div className="bg-cream w-full rounded-t-3xl max-h-[90vh] overflow-y-auto">
-        {/* Handle bar */}
+        {/* Handle */}
         <div className="flex justify-center pt-3 pb-1">
           <div className="w-10 h-1 bg-warmgray rounded-full" />
         </div>
@@ -137,15 +200,11 @@ const CollegeForm = ({ college, onSave, onClose }: CollegeFormProps) => {
           <h2 className="text-lg font-bold text-ink">
             {isEditing ? 'Edit College' : 'Add College'}
           </h2>
-          <button
-            onClick={() => onClose()}
-            className="text-sage hover:text-ink text-2xl leading-none"
-          >
+          <button onClick={() => onClose()} className="text-sage hover:text-ink text-2xl leading-none">
             ×
           </button>
         </div>
 
-        {/* Form fields */}
         <div className="px-5 py-4 space-y-4 pb-28">
 
           {/* College Name */}
@@ -176,9 +235,7 @@ const CollegeForm = ({ college, onSave, onClose }: CollegeFormProps) => {
             >
               <option value="">Select employee (optional)</option>
               {EMPLOYEE_NAMES.map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
+                <option key={name} value={name}>{name}</option>
               ))}
             </select>
           </div>
@@ -198,22 +255,6 @@ const CollegeForm = ({ college, onSave, onClose }: CollegeFormProps) => {
             />
           </div>
 
-          {/* Status */}
-          <div>
-            <label className="block text-sm font-medium text-ink mb-1">
-              Status
-            </label>
-            <select
-              name="status"
-              value={form.status}
-              onChange={handleChange}
-              className="w-full px-4 py-3 rounded-xl border border-warmgray focus:outline-none focus:ring-2 focus:ring-forest bg-white text-ink text-base"
-            >
-              <option value="Upcoming">Upcoming</option>
-              <option value="Visited">Visited</option>
-            </select>
-          </div>
-
           {/* Visit Date */}
           <div>
             <label className="block text-sm font-medium text-ink mb-1">
@@ -224,19 +265,13 @@ const CollegeForm = ({ college, onSave, onClose }: CollegeFormProps) => {
               name="visitDate"
               value={form.visitDate}
               onChange={handleChange}
-              max={form.status === 'Visited'
-                ? new Date().toISOString().split('T')[0]
-                : undefined
-              }
               className="w-full px-4 py-3 rounded-xl border border-warmgray focus:outline-none focus:ring-2 focus:ring-forest bg-white text-ink text-base"
             />
           </div>
 
           {/* Notes */}
           <div>
-            <label className="block text-sm font-medium text-ink mb-1">
-              Notes
-            </label>
+            <label className="block text-sm font-medium text-ink mb-1">Notes</label>
             <textarea
               name="notes"
               value={form.notes}
@@ -247,33 +282,88 @@ const CollegeForm = ({ college, onSave, onClose }: CollegeFormProps) => {
             />
           </div>
 
-          {/* Follow-Up Date */}
+          {/* Follow-Ups */}
           <div>
-            <label className="block text-sm font-medium text-ink mb-1">
-              Follow-Up Date
-            </label>
-            <input
-              type="date"
-              name="followUpDate"
-              value={form.followUpDate}
-              onChange={handleChange}
-              className="w-full px-4 py-3 rounded-xl border border-warmgray focus:outline-none focus:ring-2 focus:ring-forest bg-white text-ink text-base"
-            />
-          </div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-sm font-medium text-ink">Follow-Ups</label>
+              <button
+                onClick={addFollowUp}
+                className="text-xs font-semibold text-forest border border-forest px-3 py-1 rounded-lg hover:bg-forest/5 transition-colors"
+              >
+                + Add Follow-Up
+              </button>
+            </div>
 
-          {/* Follow-Up Notes */}
-          <div>
-            <label className="block text-sm font-medium text-ink mb-1">
-              Follow-Up Notes
-            </label>
-            <textarea
-              name="followUpNotes"
-              value={form.followUpNotes}
-              onChange={handleChange}
-              placeholder="Notes for the follow-up..."
-              rows={3}
-              className="w-full px-4 py-3 rounded-xl border border-warmgray focus:outline-none focus:ring-2 focus:ring-forest bg-white text-ink text-base resize-none"
-            />
+            {(form.followUps || []).length === 0 && (
+              <p className="text-xs text-sage text-center py-3 bg-white rounded-xl border border-warmgray">
+                No follow-ups added yet
+              </p>
+            )}
+
+            <div className="space-y-3">
+              {(form.followUps || []).map((fu, index) => (
+                <div
+                  key={fu._id || index}
+                  className={`rounded-xl border p-3 space-y-2
+                    ${fu.isDone
+                      ? 'bg-green-50 border-green-200 opacity-70'
+                      : 'bg-white border-warmgray'
+                    }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold text-ink">
+                      Follow-Up #{index + 1}
+                      {fu.isDone && (
+                        <span className="ml-2 text-green-600">✓ Done</span>
+                      )}
+                    </p>
+                    <div className="flex gap-2">
+                      {fu._id && !fu.isDone && isEditing && (
+                        <button
+                          onClick={() => handleMarkDone(fu._id!)}
+                          disabled={markingDone === fu._id}
+                          className="text-xs text-green-700 border border-green-300 px-2 py-0.5 rounded-lg hover:bg-green-50 transition-colors disabled:opacity-50"
+                        >
+                          {markingDone === fu._id ? 'Saving...' : 'Mark Done'}
+                        </button>
+                      )}
+                      {!fu.isDone && (
+                        <button
+                          onClick={() => removeFollowUp(index)}
+                          className="text-xs text-red-500 border border-red-200 px-2 py-0.5 rounded-lg hover:bg-red-50 transition-colors"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {!fu.isDone && (
+                    <>
+                      <input
+                        type="date"
+                        value={fu.followUpDate || ''}
+                        onChange={(e) => handleFollowUpChange(index, 'followUpDate', e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border border-warmgray focus:outline-none focus:ring-2 focus:ring-forest bg-white text-ink text-sm"
+                      />
+                      <textarea
+                        value={fu.followUpNotes || ''}
+                        onChange={(e) => handleFollowUpChange(index, 'followUpNotes', e.target.value)}
+                        placeholder="Notes for this follow-up..."
+                        rows={2}
+                        className="w-full px-3 py-2 rounded-lg border border-warmgray focus:outline-none focus:ring-2 focus:ring-forest bg-white text-ink text-sm resize-none"
+                      />
+                    </>
+                  )}
+
+                  {fu.isDone && fu.doneAt && (
+                    <p className="text-xs text-green-600">
+                      Completed on {new Date(fu.doneAt).toLocaleDateString()}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Error */}
@@ -285,12 +375,23 @@ const CollegeForm = ({ college, onSave, onClose }: CollegeFormProps) => {
 
           {/* Submit */}
           <button
-            onClick={() => handleSubmit()} 
+            onClick={() => handleSubmit()}
             disabled={loading}
             className="w-full bg-forest hover:bg-forest-dark disabled:bg-forest/40 text-white font-semibold py-3 rounded-xl transition-colors text-base"
           >
             {loading ? 'Saving...' : isEditing ? 'Save Changes' : 'Add College'}
           </button>
+
+          {/* Mark as Completed */}
+          {isEditing && college?.status !== 'Completed' && college?.visitDate && (
+            <button
+              onClick={() => handleMarkCompleted()}
+              disabled={loading}
+              className="w-full bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white font-semibold py-3 rounded-xl transition-colors text-base"
+            >
+              ✓ Mark as Completed
+            </button>
+          )}
 
           {/* Delete */}
           {isEditing && (
@@ -316,10 +417,7 @@ const CollegeForm = ({ college, onSave, onClose }: CollegeFormProps) => {
                   />
                   <div className="flex gap-3">
                     <button
-                      onClick={() => {
-                        setConfirmDelete(false);
-                        setDeleteReason('');
-                      }}
+                      onClick={() => { setConfirmDelete(false); setDeleteReason(''); }}
                       className="flex-1 py-2 rounded-xl border border-warmgray text-sage font-medium text-sm bg-white"
                     >
                       Cancel
@@ -336,32 +434,30 @@ const CollegeForm = ({ college, onSave, onClose }: CollegeFormProps) => {
               )}
             </div>
           )}
-
         </div>
       </div>
-      
+
       {/* Postpone Modal */}
       {showPostponeModal && (
         <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center px-4">
           <div className="bg-white rounded-2xl p-5 w-full max-w-sm space-y-4">
             <h3 className="font-bold text-ink text-base">Reason Required</h3>
             <p className="text-sm text-sage">
-              The {pendingPostponeField === 'followUpDate' ? 'follow-up' : 'visit'} date
-              was overdue. Please provide a reason for rescheduling.
+              {postponeAction === 'complete'
+                ? 'This college has an overdue date. Please provide a reason for marking it as completed.'
+                : `The ${pendingPostponeField === 'followUpDate' ? 'follow-up' : 'visit'} date was overdue. Please provide a reason for rescheduling.`
+              }
             </p>
             <textarea
               value={postponeReason}
               onChange={(e) => setPostponeReason(e.target.value)}
-              placeholder="e.g. College requested to reschedule..."
+              placeholder="e.g. Visit completed despite delay..."
               rows={3}
               className="w-full px-3 py-2 rounded-xl border border-warmgray text-ink text-sm resize-none focus:outline-none focus:ring-2 focus:ring-forest"
             />
             <div className="flex gap-3">
               <button
-                onClick={() => {
-                  setShowPostponeModal(false);
-                  setPostponeReason('');
-                }}
+                onClick={() => { setShowPostponeModal(false); setPostponeReason(''); }}
                 className="flex-1 py-2 rounded-xl border border-warmgray text-sage text-sm"
               >
                 Cancel
@@ -370,7 +466,12 @@ const CollegeForm = ({ college, onSave, onClose }: CollegeFormProps) => {
                 onClick={() => {
                   if (!postponeReason.trim()) return;
                   setShowPostponeModal(false);
-                  handleSubmit(postponeReason.trim());
+                  if (postponeAction === 'complete') {
+                    handleMarkCompleted(postponeReason.trim());
+                  } else {
+                    handleSubmit(postponeReason.trim());
+                  }
+                  setPostponeReason('');
                 }}
                 disabled={!postponeReason.trim()}
                 className="flex-1 py-2 rounded-xl bg-forest text-white text-sm disabled:bg-forest/40"

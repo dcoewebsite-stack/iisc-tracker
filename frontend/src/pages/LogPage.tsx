@@ -47,36 +47,26 @@ const LogPage = () => {
 
   return (
     <div className="min-h-screen bg-cream pb-20">
-      {/* Header */}
       <div className="bg-white px-4 pt-10 pb-4 shadow-sm border-b border-warmgray sticky top-0 z-10">
         <h1 className="text-xl font-bold text-ink mb-4">Activity Log</h1>
-
-        {/* Tabs */}
         <div className="flex gap-2">
           <button
             onClick={() => setActiveTab('deletions')}
             className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors
-              ${activeTab === 'deletions'
-                ? 'bg-forest text-white'
-                : 'bg-warmgray/40 text-sage'
-              }`}
+              ${activeTab === 'deletions' ? 'bg-forest text-white' : 'bg-warmgray/40 text-sage'}`}
           >
             Deletions ({logs.deletions.length})
           </button>
           <button
             onClick={() => setActiveTab('postpones')}
             className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors
-              ${activeTab === 'postpones'
-                ? 'bg-forest text-white'
-                : 'bg-warmgray/40 text-sage'
-              }`}
+              ${activeTab === 'postpones' ? 'bg-forest text-white' : 'bg-warmgray/40 text-sage'}`}
           >
             Postpones ({logs.postpones.length})
           </button>
         </div>
       </div>
 
-      {/* Log entries */}
       <div className="px-4 py-4 space-y-3">
         {loading ? (
           <p className="text-center text-sage py-10">Loading...</p>
@@ -92,26 +82,18 @@ const LogPage = () => {
           </div>
         ) : (
           currentLogs.map((log) => (
-            <div
-              key={log._id}
-              className="bg-white rounded-2xl p-4 border border-warmgray shadow-sm"
-            >
-              {/* College name + time */}
+            <div key={log._id} className="bg-white rounded-2xl p-4 border border-warmgray shadow-sm">
               <div className="flex items-start justify-between gap-2 mb-2">
                 <p className="font-semibold text-ink flex-1 min-w-0 truncate">
                   {log.collegeName}
                 </p>
-                <p className="text-xs text-sage whitespace-nowrap">
-                  {timeAgo(log.createdAt)}
-                </p>
+                <p className="text-xs text-sage whitespace-nowrap">{timeAgo(log.createdAt)}</p>
               </div>
 
-              {/* Who did it */}
               <p className="text-xs text-sage mb-2">
                 By <span className="font-medium text-ink">{log.performedBy}</span>
               </p>
 
-              {/* Postpone metadata */}
               {log.eventType === 'POSTPONE' && log.metadata && (
                 <div className="bg-amber-50 rounded-xl px-3 py-2 mb-2">
                   <p className="text-xs text-amber-700">
@@ -127,7 +109,6 @@ const LogPage = () => {
                 </div>
               )}
 
-              {/* Reason */}
               <div className="bg-cream rounded-xl px-3 py-2 border border-warmgray">
                 <p className="text-xs text-sage font-medium mb-0.5">Reason</p>
                 <p className="text-xs text-ink">{log.reason}</p>

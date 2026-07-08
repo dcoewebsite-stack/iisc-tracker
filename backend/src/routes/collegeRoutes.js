@@ -7,7 +7,8 @@ const {
   createCollege,
   updateCollege,
   deleteCollege,
-  getDashboardStats
+  getDashboardStats,
+  markFollowUpDone,
 } = require('../controllers/collegeController');
 
 router.use(protect);
@@ -18,5 +19,6 @@ router.get('/:id', getCollegeById);
 router.post('/', createCollege);
 router.put('/:id', updateCollege);
 router.delete('/:id', deleteCollege);
+router.put('/:id/followup/:followUpId/done', markFollowUpDone);
 
 module.exports = router;

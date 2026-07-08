@@ -10,7 +10,7 @@ interface ImportResult {
 
 interface ImportModalProps {
   onClose: () => void;
-  onImportComplete: () => void;
+  onImportComplete: (count: number) => void;
 }
 
 const ImportModal = ({ onClose, onImportComplete }: ImportModalProps) => {
@@ -19,7 +19,6 @@ const ImportModal = ({ onClose, onImportComplete }: ImportModalProps) => {
   const [result, setResult] = useState<ImportResult | null>(null);
   const [error, setError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
@@ -58,7 +57,7 @@ const ImportModal = ({ onClose, onImportComplete }: ImportModalProps) => {
       });
 
       setResult(response.data.data);
-      onImportComplete(); // refresh college list
+      onImportComplete(response.data.data.imported);
     } catch (err: any) {
       setError(err.response?.data?.error || 'Import failed. Try again.');
     } finally {
@@ -67,9 +66,10 @@ const ImportModal = ({ onClose, onImportComplete }: ImportModalProps) => {
   };
 
   const handleDownloadTemplate = () => {
+    const XLSX_lib = XLSX;
     const templateData = [
       {
-        'College Name': 'IIT Dholakpur',
+        'College Name': 'IIT Bombay',
         'Assigned Employee': 'Pravar',
         'Status': 'Upcoming',
         'Visit Date': '2026-07-15',
@@ -79,22 +79,21 @@ const ImportModal = ({ onClose, onImportComplete }: ImportModalProps) => {
       },
     ];
 
-    const worksheet = XLSX.utils.json_to_sheet(templateData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Colleges');
+    const worksheet = XLSX_lib.utils.json_to_sheet(templateData);
+    const workbook = XLSX_lib.utils.book_new();
+    XLSX_lib.utils.book_append_sheet(workbook, worksheet, 'Colleges');
 
-    // Set column widths for readability
     worksheet['!cols'] = [
-      { wch: 25 }, // College Name
-      { wch: 20 }, // Assigned Employee
-      { wch: 12 }, // Status
-      { wch: 15 }, // Visit Date
-      { wch: 30 }, // Notes
-      { wch: 15 }, // Follow Up Date
-      { wch: 30 }, // Follow Up Notes
+      { wch: 25 },
+      { wch: 20 },
+      { wch: 12 },
+      { wch: 15 },
+      { wch: 30 },
+      { wch: 15 },
+      { wch: 30 },
     ];
 
-    XLSX.writeFile(workbook, 'college-outreach-template.xlsx');
+    XLSX_lib.writeFile(workbook, 'college-outreach-template.xlsx');
   };
 
   return (
@@ -105,12 +104,10 @@ const ImportModal = ({ onClose, onImportComplete }: ImportModalProps) => {
       }}
     >
       <div className="bg-cream w-full rounded-t-3xl max-h-[90vh] overflow-y-auto">
-        {/* Handle bar */}
         <div className="flex justify-center pt-3 pb-1">
           <div className="w-10 h-1 bg-warmgray rounded-full" />
         </div>
 
-        {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-warmgray">
           <h2 className="text-lg font-bold text-ink">Import from Excel</h2>
           <button
@@ -122,12 +119,9 @@ const ImportModal = ({ onClose, onImportComplete }: ImportModalProps) => {
         </div>
 
         <div className="px-5 py-5 space-y-5 pb-28">
-
           {/* Template download */}
           <div className="bg-white rounded-2xl p-4 border border-warmgray">
-            <p className="text-sm font-medium text-ink mb-1">
-              First time importing?
-            </p>
+            <p className="text-sm font-medium text-ink mb-1">First time importing?</p>
             <p className="text-xs text-sage mb-3">
               Download the template to make sure your Excel file has the correct column headers.
             </p>
@@ -141,23 +135,16 @@ const ImportModal = ({ onClose, onImportComplete }: ImportModalProps) => {
 
           {/* File picker */}
           <div>
-            <p className="text-sm font-medium text-ink mb-2">
-              Select your Excel file
-            </p>
+            <p className="text-sm font-medium text-ink mb-2">Select your Excel file</p>
             <div
               onClick={() => fileInputRef.current?.click()}
               className={`w-full border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-colors
-                ${file
-                  ? 'border-forest bg-forest/5'
-                  : 'border-warmgray hover:border-forest/50'
-                }`}
+                ${file ? 'border-forest bg-forest/5' : 'border-warmgray hover:border-forest/50'}`}
             >
               <p className="text-3xl mb-2">📂</p>
               {file ? (
                 <>
-                  <p className="text-sm font-medium text-forest truncate">
-                    {file.name}
-                  </p>
+                  <p className="text-sm font-medium text-forest truncate">{file.name}</p>
                   <p className="text-xs text-sage mt-1">
                     {(file.size / 1024).toFixed(1)} KB · Tap to change
                   </p>
@@ -185,31 +172,23 @@ const ImportModal = ({ onClose, onImportComplete }: ImportModalProps) => {
             </div>
           )}
 
-          {/* Result summary */}
+          {/* Result */}
           {result && (
             <div className="bg-white rounded-2xl border border-warmgray p-4 space-y-3">
               <p className="text-sm font-bold text-ink">Import Complete</p>
               <div className="flex gap-3">
                 <div className="flex-1 bg-green-50 rounded-xl p-3 text-center">
-                  <p className="text-2xl font-bold text-green-700">
-                    {result.imported}
-                  </p>
+                  <p className="text-2xl font-bold text-green-700">{result.imported}</p>
                   <p className="text-xs text-green-600 mt-1">Imported</p>
                 </div>
                 <div className="flex-1 bg-amber-50 rounded-xl p-3 text-center">
-                  <p className="text-2xl font-bold text-amber-700">
-                    {result.skipped}
-                  </p>
+                  <p className="text-2xl font-bold text-amber-700">{result.skipped}</p>
                   <p className="text-xs text-amber-600 mt-1">Skipped</p>
                 </div>
               </div>
-
-              {/* Skipped reasons */}
               {result.errors.length > 0 && (
                 <div>
-                  <p className="text-xs font-medium text-sage mb-2">
-                    Skipped reasons:
-                  </p>
+                  <p className="text-xs font-medium text-sage mb-2">Skipped reasons:</p>
                   <div className="space-y-1 max-h-32 overflow-y-auto">
                     {result.errors.map((err, i) => (
                       <p key={i} className="text-xs text-red-500 bg-red-50 px-3 py-1.5 rounded-lg">
@@ -222,8 +201,8 @@ const ImportModal = ({ onClose, onImportComplete }: ImportModalProps) => {
             </div>
           )}
 
-          {/* Upload button */}
-          {!result && (
+          {/* Buttons */}
+          {!result ? (
             <button
               onClick={handleUpload}
               disabled={loading || !file}
@@ -231,10 +210,7 @@ const ImportModal = ({ onClose, onImportComplete }: ImportModalProps) => {
             >
               {loading ? 'Importing...' : 'Import Colleges'}
             </button>
-          )}
-
-          {/* Done button after successful import */}
-          {result && (
+          ) : (
             <button
               onClick={onClose}
               className="w-full bg-forest hover:bg-forest-dark text-white font-semibold py-3 rounded-xl transition-colors text-base"
