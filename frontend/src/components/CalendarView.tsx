@@ -20,11 +20,14 @@ const CalendarView = ({ colleges }: CalendarViewProps) => {
       if (!eventMap[key]) eventMap[key] = [];
       eventMap[key].push({ college, type: 'visit' });
     }
-    if (college.followUpDate) {
-      const key = new Date(college.followUpDate).toISOString().split('T')[0];
-      if (!eventMap[key]) eventMap[key] = [];
-      eventMap[key].push({ college, type: 'followup' });
-    }
+    // followUps is now an array
+    (college.followUps || []).forEach((fu) => {
+      if (!fu.isDone && fu.followUpDate) {
+        const key = new Date(fu.followUpDate).toISOString().split('T')[0];
+        if (!eventMap[key]) eventMap[key] = [];
+        eventMap[key].push({ college, type: 'followup' });
+      }
+    });
   });
 
   const today = new Date();
