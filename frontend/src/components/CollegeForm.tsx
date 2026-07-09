@@ -22,9 +22,12 @@ const EMPTY_FORM: CollegeFormData = {
   collegeName: '',
   assignedEmployee: '',
   contactPerson: '',
+  phone: '',
+  email: '', 
   visitDate: '',
   notes: '',
   followUps: [],
+
 };
 
 const CollegeForm = ({ college, onSave, onClose, onMarkFollowUpDone }: CollegeFormProps) => {
@@ -45,6 +48,8 @@ const CollegeForm = ({ college, onSave, onClose, onMarkFollowUpDone }: CollegeFo
         collegeName: college.collegeName,
         assignedEmployee: college.assignedEmployee || '',
         contactPerson: college.contactPerson || '',
+        phone: college.phone || '',
+email: college.email || '',
         visitDate: college.visitDate
           ? new Date(college.visitDate).toISOString().split('T')[0]
           : '',
@@ -254,7 +259,35 @@ const CollegeForm = ({ college, onSave, onClose, onMarkFollowUpDone }: CollegeFo
               className="w-full px-4 py-3 rounded-xl border border-warmgray focus:outline-none focus:ring-2 focus:ring-forest bg-white text-ink text-base"
             />
           </div>
+{/* Phone */}
+<div>
+  <label className="block text-sm font-medium text-ink mb-1">
+    Phone Number
+  </label>
+  <input
+    type="tel"
+    name="phone"
+    value={form.phone}
+    onChange={handleChange}
+    placeholder="e.g. +91 98765 43210 (optional)"
+    className="w-full px-4 py-3 rounded-xl border border-warmgray focus:outline-none focus:ring-2 focus:ring-forest bg-white text-ink text-base"
+  />
+</div>
 
+{/* Email */}
+<div>
+  <label className="block text-sm font-medium text-ink mb-1">
+    Email
+  </label>
+  <input
+    type="email"
+    name="email"
+    value={form.email}
+    onChange={handleChange}
+    placeholder="e.g. principal@college.edu (optional)"
+    className="w-full px-4 py-3 rounded-xl border border-warmgray focus:outline-none focus:ring-2 focus:ring-forest bg-white text-ink text-base"
+  />
+</div>
           {/* Visit Date */}
           <div>
             <label className="block text-sm font-medium text-ink mb-1">

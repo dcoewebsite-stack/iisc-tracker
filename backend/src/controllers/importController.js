@@ -76,6 +76,10 @@ const importColleges = async (req, res) => {
       const visitDate = parseDate(row['Visit Date']);
       const assignedEmployee = row['Assigned Employee']?.toString().trim() || '';
       const contactPerson = row['Contact Person ']?.toString().trim() || '';
+      const phone = row['Phone']?.toString().trim() || 
+              row['Phone Number']?.toString().trim() || '';
+const email = row['Email']?.toString().trim() || 
+              row['Gmail']?.toString().trim() || '';
       const notes = row['Notes']?.toString().trim() || '';
 
       if (!collegeName) {
@@ -152,6 +156,8 @@ const importColleges = async (req, res) => {
         collegeName,
         assignedEmployee,
         contactPerson,
+        phone,
+        email,
         status: computeStatus({ visitDate, followUps: uniqueFollowUps }),
         visitDate,
         notes,

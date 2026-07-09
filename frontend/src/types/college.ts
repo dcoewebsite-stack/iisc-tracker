@@ -18,6 +18,8 @@ export interface College {
   lastUpdatedBy: string;
   createdAt: string;
   updatedAt: string;
+  phone: string;
+  email: string;
 }
 
 export interface CollegeFormData {
@@ -35,6 +37,8 @@ export interface CollegeFormData {
     doneAt?: string | null;
   }[];
   reason?: string;
+  phone?: string;
+  email?: string;
 }
 
 export interface DashboardStats {

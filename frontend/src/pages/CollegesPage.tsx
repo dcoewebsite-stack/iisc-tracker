@@ -92,6 +92,8 @@ const CollegesPage = () => {
         'College Name': c.collegeName,
         'Assigned Employee': c.assignedEmployee || '',
         'Contact Person': c.contactPerson || '',
+        'Phone': c.phone || '',
+        'Email': c.email || '',
         'Status': c.status,
         'Visit Date': c.visitDate ? new Date(c.visitDate).toLocaleDateString() : '',
         'Notes': c.notes || '',

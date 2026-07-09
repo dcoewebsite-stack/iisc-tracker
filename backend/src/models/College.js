@@ -32,6 +32,16 @@ const collegeSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
+    phone: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    email: {
+      type: String,
+      trim: true,
+      default: '',
+    },
     assignedEmployee: {
       type: String,
       trim: true,

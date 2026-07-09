@@ -68,6 +68,16 @@ const CollegeCard = ({ college, onClick }: CollegeCardProps) => {
           Contact: <span className="font-medium">{college.contactPerson}</span>
         </p>
       )}
+      {college.phone && (
+  <p className="text-xs text-sage mb-1">
+    📞 <span className="font-medium">{college.phone}</span>
+  </p>
+)}
+{college.email && (
+  <p className="text-xs text-sage mb-2">
+    ✉️ <span className="font-medium">{college.email}</span>
+  </p>
+)}
 
       {/* Visit date */}
       {college.visitDate && (
